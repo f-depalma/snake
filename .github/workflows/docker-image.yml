@@ -54,4 +54,4 @@ jobs:
             sudo docker pull fdepalma95/snake
             sudo docker stop snake
             sudo docker rm snake
-            sudo docker run --detach --name snake --net=host fdepalma95/snake
+            sudo docker run --detach --name snake -p 4000:80 fdepalma95/snake
