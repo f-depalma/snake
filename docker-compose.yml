@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: snake
+    image: snake
+    build:
+      context: .
+    ports:
+      - "4000:80"

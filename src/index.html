@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+  <link rel="stylesheet" type="text/css" href="css.css">
+<head>
+<meta charset="UTF-8">
+<title>JQuery</title>
+</head>
+<body>
+<script src="jquery-3.3.1.js"></script>
+
+  <div id="text"></div>
+  <div id="finestra">
+    <div id="target"></div>
+    <div id="cibo"></div>
+    <div id="cerchio"></div>
+  </div>
+
+  <script>
+
+  startPos = new Object();
+  startPos.left = 200;
+  startPos.top = 200;
+
+  var positionList = [startPos];
+  var cerchio = $('#cerchio');
+  var nextCerchio = cerchio;
+  var cerc = cerchio;
+  var avvisi = $('#avvisi');
+  var lunghezza = 1;
+  var h = window.innerHeight;
+  var w = window.innerWidth;
+  var stop = false;
+  ciboPosition = new Object();
+  var interval;
+  var arrow = false;
+  var direction = 0;
+  var freccie;
+  var automatic = false;
+  var automaticID;
+  var ciboIsMoved = true;
+  var count = 0;
+  var dirX;
+  var dirY;
+  var coef1 = 1;
+  var coef2 = 1;
+  var dirNotFound = false;
+  var pos0 = new Object();
+  pos0.left = 0;
+  pos0.top = 0;
+
+  var posMax = new Object();
+  posMax.left = w;
+  posMax.top = h;
+
+  var distMax = distance(pos0, posMax);
+
+
+  $('#finestra').css({width: w-100, height: h-100});
+
+  function follow(){
+    var cerchioPosition = cerchio.position();
+    if(compare(cerchio, $("#cibo"))){
+      //if (lunghezza < 8){
+        newCircle();
+      //}
+      muoviCibo();
+      clearInterval(interval);
+      interval = setInterval(muoviCibo, 500000);
+    }
+
+    if(positionList.length > 5){
+      cerchio.offset(positionList[5]);
+      muoviNextCerchio();
+      cerchio = $('#finestra').children('#cerchio').first();
+
+      if (cerchio.position().left == (w-50) || cerchio.position().left == 1 ||
+          cerchio.position().top == (h-50) || cerchio.position().top == 1){
+            if (!automatic){
+              morto();
+            }
+      }
+      positionList.shift();
+    }
+  }
+
+  function distance(obj1, obj2){
+    var o1 = new Object();
+    if (obj1.left == null){
+      o1.left = obj1.position().left + (obj1.css('width').replace(/[A-Z]/gi,'')/2);
+      o1.top = obj1.position().top + (obj1.css('height').replace(/[A-Z]/gi,'')/2);
+    } else {
+      o1 = obj1;
+    }
+
+    var o2 = new Object();
+    if(obj2.left == null){
+      o2.left = obj2.position().left + (obj2.css('width').replace(/[A-Z]/gi,'')/2);
+      o2.top = obj2.position().top + (obj2.css('height').replace(/[A-Z]/gi,'')/2);
+    } else {
+      o2 = obj2;
+    }
+    return Math.sqrt((o1.left - o2.left)*(o1.left - o2.left)+
+                (o1.top - o2.top)*(o1.top - o2.top));
+  }
+
+  function muoviNextCerchio(){
+    var i;
+    stop = true;
+    cerc = cerchio;
+    nextCerchio = cerchio;
+    var dist = distance(positionList[5], cerchio.position());
+
+    for (i = 1; i < lunghezza; i++){
+      cerc = nextCerchio;
+      nextCerchio = nextCerchio.next('#cerchio');
+      nextCerchioPosition = new Object();
+
+      var d = distance(cerc.position(), nextCerchio.position());
+      var cosAlfa = (cerc.position().left-nextCerchio.position().left)/d;
+      var senAlfa = (cerc.position().top-nextCerchio.position().top)/d;
+
+      nextCerchioPosition.top = nextCerchio.position().top + (dist * senAlfa);
+      nextCerchioPosition.left = nextCerchio.position().left + (dist * cosAlfa);
+
+      var distanza = distance(cerc.position(), nextCerchioPosition);
+      var spostamento = 0;
+
+      if (distanza < 40){
+        spostamento = 40-distanza;
+        nextCerchioPosition.left -= spostamento * cosAlfa;
+        nextCerchioPosition.top -= spostamento * senAlfa;
+      } else if (distanza > 50){
+        spostamento = distanza-50;
+        nextCerchioPosition.left += spostamento * cosAlfa;
+        nextCerchioPosition.top += spostamento * senAlfa;
+      }
+
+      if (nextCerchioPosition.left > (w-50)) {
+        nextCerchioPosition.left = w-50;
+      } else if (nextCerchioPosition.left < 1){
+        nextCerchioPosition.left = 1;
+      }
+      if (nextCerchioPosition.top > (h-50)){
+        nextCerchioPosition.top = h-50;
+      } else if (nextCerchioPosition.top < 1){
+        nextCerchioPosition.top = 1;
+      }
+      if (automatic) {
+        if(morsoAutomatic(nextCerchioPosition)){
+          break;
+        }
+      } else {
+        if (i > 3 && morso(nextCerchioPosition)){
+          break;
+        }
+      }
+      nextCerchio.offset(nextCerchioPosition);
+    }
+    stop = false;
+  }
+  /*
+  trovare la direzione che non si scontra con il corpo e che si avvicina al cibo
+  */
+  function morso(thisPos){
+    var firstPosition = $('#finestra').children('#cerchio').first().position();
+    var limit = (cerchio.css('height').replace(/[A-Z]/gi,'')/2 + $('#cibo').css('height').replace(/[A-Z]/gi,'')/2);
+
+    if (distance(thisPos, firstPosition) < limit){
+      morto();
+
+      return true;
+    }
+    return false;
+  }
+
+  function morto(){
+    positionList.push(startPos);
+    $('#finestra').children('#cerchio').remove();
+    $('#finestra').children().last().after('<div id="cerchio"></div>');
+    $('#finestra').children('#cerchio').first().offset(startPos);
+    lunghezza = 1;
+    alert("sei morto");
+    direction = 0;
+    if (arrow) {
+      clearInterval(freccie);
+      freccie = setInterval(salvaSpostamentoFreccie, 1);
+    }
+  }
+
+  function morsoAutomatic(thisPos){
+    var firstPosition = $('#finestra').children('#cerchio').first().position();
+    var limit = (cerchio.css('height').replace(/[A-Z]/gi,'')/2 + $('#cibo').css('height').replace(/[A-Z]/gi,'')/2);
+    if (distance(thisPos, firstPosition) < limit){
+      //mortoAutomatic();
+      return true;
+    }
+    return false;
+  }
+
+  function compare(obj1, obj2){
+    var o1 = new Object();
+    o1.left = obj1.position().left + (obj1.css('width').replace(/[A-Z]/gi,'')/2);
+    o1.top = obj1.position().top + (obj1.css('height').replace(/[A-Z]/gi,'')/2);
+
+    var o2 = new Object();
+    o2.left = obj2.position().left + (obj2.css('width').replace(/[A-Z]/gi,'')/2);
+    o2.top = obj2.position().top + (obj2.css('height').replace(/[A-Z]/gi,'')/2);
+
+    var distanzaLeft = obj1.css('width').replace(/[A-Z]/gi,'')/2 + obj2.css('width').replace(/[A-Z]/gi,'')/2;
+    var distanzaTop = obj1.css('height').replace(/[A-Z]/gi,'')/2 + obj2.css('height').replace(/[A-Z]/gi,'')/2;
+
+    if(Math.abs(o2.left-o1.left) < distanzaLeft) {
+      if(Math.abs(o2.top-o1.top) < distanzaTop){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function muoviCibo(){
+    ciboPosition.left = Math.random()*(w-100);
+    ciboPosition.top = Math.random()*(h-100);
+    $("#cibo").offset(ciboPosition);
+    ciboIsMoved = true;
+  }
+
+
+  function savePosition(event){
+    position = new Object();
+    position.left = event.pageX-25;
+    position.top = event.pageY-25;
+
+    if (position.left > (w-50)) {
+      position.left = w-50;
+    } else if (position.left < 1){
+      position.left = 1;
+    }
+    if (position.top > (h-50)){
+      position.top = h-50;
+    } else if (position.top < 1){
+      position.top = 1;
+    }
+
+    positionList.push(position);
+  }
+
+
+  function newCircle(){
+    stop = true;
+    var lastCircle = $('#finestra').children().last();
+
+    newPos = new Object();
+    if (lunghezza > 1){
+      penultimo = lunghezza - 2;
+      var penultimoCircle = $('#finestra').children().eq(penultimo).position();
+
+      var d = distance(penultimoCircle, lastCircle.position());
+      var cosAlfa = (penultimoCircle.left-lastCircle.position().left)/d;
+      var senAlfa = (penultimoCircle.top-lastCircle.position().top)/d;
+
+      newPos.top = lastCircle.position().top - (50 * senAlfa);
+      newPos.left = lastCircle.position().left - (50 * cosAlfa);
+
+    } else {
+
+      var d = distance(positionList[0], lastCircle.position());
+      var cosAlfa = (positionList[0].left-lastCircle.position().left)/d;
+      var senAlfa = (positionList[0].top-lastCircle.position().top)/d;
+
+      newPos.top = lastCircle.position().top + (50 * senAlfa);
+      newPos.left = lastCircle.position().left + (50 * cosAlfa);
+
+    }
+
+    lastCircle.after($('<div id="cerchio"></div>'));
+    lunghezza++;
+    var lastCircle = $('#finestra').children().last();
+
+    lastCircle.offset(newPos);
+    stop = false;
+  }
+
+  function salvaSpostamentoFreccie(){
+    var velocita = 3;
+    spostamento = new Object();
+
+    if(positionList.length < 6 && direction != 0){
+      if (direction == 37){
+        spostamento.left = positionList[positionList.length-1].left - velocita;
+        spostamento.top = positionList[positionList.length-1].top;
+      } else if (direction == 38){
+        spostamento.left = positionList[positionList.length-1].left;
+        spostamento.top = positionList[positionList.length-1].top - velocita;
+      } else if (direction == 39){
+        spostamento.left = positionList[positionList.length-1].left + velocita;
+        spostamento.top = positionList[positionList.length-1].top;
+      } else if (direction == 40){
+        spostamento.left = positionList[positionList.length-1].left;
+        spostamento.top = positionList[positionList.length-1].top + velocita;
+      }
+
+      if (spostamento.left > (w-50)) {
+        spostamento.left = w-50;
+      } else if (spostamento.left < 1){
+        spostamento.left = 1;
+      }
+      if (spostamento.top > (h-50)){
+        spostamento.top = h-50;
+      } else if (spostamento.top < 1){
+        spostamento.top = 1;
+      }
+      positionList.push(spostamento);
+    }
+  }
+
+  function automaticPilot(){
+    var limit = (cerchio.css('height').replace(/[A-Z]/gi,'')/2 + $('#cibo').css('height').replace(/[A-Z]/gi,'')/2);
+
+    if (distance($('#cibo'), cerchio) > limit-10){
+      cercaTarget();
+    }
+  }
+
+  function cercaTarget(){
+    var s = 0;
+    var c = 0;
+    var p;
+    var minP = distMax;
+    //alert("cercaTarget");
+    if (ciboIsMoved || dirNotFound){
+      ciboIsMoved = false;
+      var d = distance($('#cibo'), cerchio);
+      dirX = ($('#cibo').position().left-cerchio.position().left)/d;
+      dirY = ($('#cibo').position().top-cerchio.position().top)/d;
+      var passo = 50;
+      //alert("out");
+      if (!verificaDistanza(d, passo, dirY, dirX)){
+        var found = 0;
+        dirNotFound = true;
+        for (var x = 0; x < 2*Math.PI; x+=0.3){
+          s = Math.sin(x);
+          c = Math.cos(x);
+          //alert(s+" "+c);
+          if (verificaDistanza(100, passo, s, c)){
+            found++;
+            p = minDistRettaConCibo(d, passo, s, c);
+            if (p < minP){
+              minP = p;
+              dirX = c;
+              dirY = s;
+            }
+          }
+        }
+        if (found < 4) {
+          for (var x = 0; x < 2*Math.PI; x+=0.3){
+            s = Math.sin(x);
+            c = Math.cos(x);
+            //alert(s+" "+c);
+            if (verificaDistanza(100, passo, s, c)){
+                dirX = c;
+                dirY = s;
+            }
+          }
+        }
+      } else {
+        dirNotFound = false;
+      }
+    }
+    automaticPosition(dirY, dirX);
+  }
+
+  function minDistRettaConCibo(d, passo, senAlfa, cosAlfa){
+    var pos = new Object();
+    pos.left = cerchio.position().left;
+    pos.top = cerchio.position().top;
+    var minDist = distMax;
+
+    for (var i = 0; i < d; i+=passo){
+      pos.left += passo*cosAlfa;
+      pos.top += passo*senAlfa;
+
+      var dist = distance(pos, $('#cibo'));
+
+      if (dist < minDist){
+        ret = dist;
+        minDist = dist;
+      }
+    }
+    return minDist;
+  }
+
+  function verificaDistanza(d, passo, senAlfa, cosAlfa){
+    var pos = new Object();
+    pos.left = cerchio.position().left;
+    pos.top = cerchio.position().top;
+    var ret = true;
+
+    for (var i = 0; i < d; i+=passo){
+      pos.left += passo*cosAlfa;
+      pos.top += passo*senAlfa;
+
+      var lastCerchio = cerchio.next('#cerchio');
+      for(var j = 1; j < lunghezza; j++){
+        if (j > 3){
+          var dist = distance(pos, lastCerchio);
+
+          if (dist < 100){
+            ret = false;
+          }
+        }
+        lastCerchio = lastCerchio.next('#cerchio');
+      }
+    }
+    return ret;
+  }
+
+  function automaticPosition(senAlfa, cosAlfa){
+    var velocita = 10;
+    var pos = new Object();
+
+    if (positionList.length < 10){
+      pos.left = positionList[positionList.length-1].left + (velocita * cosAlfa);
+      pos.top = positionList[positionList.length-1].top + (velocita * senAlfa);
+      positionList.push(pos);
+    }
+  }
+
+
+  function main(){
+    //$('#text').text(dirX +" "+dirY);
+    if (!stop){
+      follow();
+    }
+  }
+
+
+  muoviCibo();
+  interval = setInterval(muoviCibo, 500000);
+
+  $(document).ready(function() {
+    $('#finestra').children('#cerchio').first().offset(startPos);
+    alert("1. Use the mouse to move the snake.\n2. Don't bite yourself.\n3. Don't crash into the wall.\n4. Press 'f' to activate/disable the arrow keys.\n5. Press 'a' to activate/disable autopilot. (Beta feature)");
+    setInterval(main, 1);
+
+    $(document).on('mousemove',function(event){
+      if (!(arrow || automatic)){
+        savePosition(event);
+      }
+    });
+    $(document).on('keydown', function(event){
+      if (event.which == 70){
+        if(arrow){
+          arrow = false;
+          clearInterval(freccie);
+          direction = 0;
+        } else {
+          arrow = true;
+          freccie = setInterval(salvaSpostamentoFreccie, 1);
+        }
+      } else if (event.which == 65){
+        if(automatic){
+          automatic = false;
+          clearInterval(automaticID);
+          if (arrow) {
+            direction = 0;
+            freccie = setInterval(salvaSpostamentoFreccie, 1);
+          }
+        } else {
+          clearInterval(freccie);
+          automatic = true;
+          cerchio = $('#finestra').children('#cerchio').first();
+          automaticID = setInterval(automaticPilot, 1);
+        }
+      } else if (arrow && event.which >= 37 && event.which <= 40){
+        direction = event.which;
+      }
+    });
+  });
+
+  </script>
+
+</body>
+</html>
