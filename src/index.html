@@ -36,13 +36,11 @@
       var freccie;
       var automatic = false;
       var automaticID;
-      var ciboIsMoved = true;
       var count = 0;
       var dirX;
       var dirY;
       var coef1 = 1;
       var coef2 = 1;
-      var dirNotFound = false;
       var pos0 = new Object();
       pos0.left = 0;
       pos0.top = 0;
@@ -249,7 +247,6 @@
         ciboPosition.left = Math.random() * (w - 100);
         ciboPosition.top = Math.random() * (h - 100);
         $("#cibo").offset(ciboPosition);
-        ciboIsMoved = true;
       }
 
       function savePosition(event) {
@@ -356,56 +353,33 @@
       function cercaTarget() {
         var s = 0;
         var c = 0;
-        var p;
+        var minDirSum;
         var minP = distMax;
         //alert("cercaTarget");
-        if (ciboIsMoved || dirNotFound) {
-          ciboIsMoved = false;
-          var d = distance($("#cibo"), cerchio);
-          dirX = ($("#cibo").position().left - cerchio.position().left) / d;
-          dirY = ($("#cibo").position().top - cerchio.position().top) / d;
-          var passo = 50;
-          //alert("out");
-          if (!verificaDistanza(d, passo, dirY, dirX)) {
-            dirNotFound = true;
-            for (var x = 0; x < 2 * Math.PI; x += 0.3) {
-              s = Math.sin(x);
-              c = Math.cos(x);
-              //alert(s+" "+c);
-              if (verificaDistanza(distMax, passo, s, c)) {
-                p = minDistRettaConCibo(d, passo, s, c);
-                if (p < minP) {
-                  minP = p;
-                  dirX = c;
-                  dirY = s;
-                } 
+        var d = distance($("#cibo"), cerchio);
+        dirX = ($("#cibo").position().left - cerchio.position().left) / d;
+        dirY = ($("#cibo").position().top - cerchio.position().top) / d;
+        var passo = 80;
+        //alert("out");
+        if (!verificaDistanza(d, passo, dirY, dirX)) {
+          var _dirX = dirX;
+          var _dirY = dirY;
+          for (var x = 0; x < 2 * Math.PI; x += 0.628) {
+            s = Math.sin(x);
+            c = Math.cos(x);
+
+            //alert(s+" "+c);
+            if (verificaDistanza(distMax, passo, s, c)) {
+              p = Math.abs(_dirX - c) + Math.abs(_dirY - s);
+              if (p < minP) {
+                minP = p;
+                dirX = c;
+                dirY = s;
               }
             }
-          } else {
-            dirNotFound = false;
           }
         }
         automaticPosition(dirY, dirX);
-      }
-
-      function minDistRettaConCibo(d, passo, senAlfa, cosAlfa) {
-        var pos = new Object();
-        pos.left = cerchio.position().left;
-        pos.top = cerchio.position().top;
-        var minDist = distMax;
-
-        for (var i = 0; i < d; i += passo) {
-          pos.left += passo * cosAlfa;
-          pos.top += passo * senAlfa;
-
-          var dist = distance(pos, $("#cibo"));
-
-          if (dist < minDist) {
-            ret = dist;
-            minDist = dist;
-          }
-        }
-        return minDist;
       }
 
       function verificaDistanza(d, passo, senAlfa, cosAlfa) {
@@ -418,13 +392,21 @@
           pos.left += passo * cosAlfa;
           pos.top += passo * senAlfa;
 
+          if (
+            pos.left === 0 ||
+            pos.left === w ||
+            pos.top === 0 ||
+            pos.top === h
+          ) {
+            return ret;
+          }
           var lastCerchio = cerchio.next("#cerchio");
           for (var j = 1; j < lunghezza; j++) {
-            if (j > 3) {
+            if (j > 2) {
               var dist = distance(pos, lastCerchio);
 
-              if (dist < 100) {
-                ret = false;
+              if (dist < 50) {
+                return false;
               }
             }
             lastCerchio = lastCerchio.next("#cerchio");
