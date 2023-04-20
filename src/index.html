@@ -350,6 +350,9 @@
         }
       }
 
+      var prevDirX
+      var prevDirY
+
       function cercaTarget() {
         var s = 0;
         var c = 0;
@@ -370,7 +373,7 @@
 
             //alert(s+" "+c);
             if (verificaDistanza(distMax, passo, s, c)) {
-              p = Math.abs(_dirX - c) + Math.abs(_dirY - s);
+              p = Math.abs(_dirX - c) + Math.abs(_dirY - s) + 0.5*(Math.abs(prevDirX - c) + Math.abs(prevDirY - s));
               if (p < minP) {
                 minP = p;
                 dirX = c;
@@ -379,6 +382,8 @@
             }
           }
         }
+        prevDirX = dirX
+        prevDirY = dirY
         automaticPosition(dirY, dirX);
       }
 
