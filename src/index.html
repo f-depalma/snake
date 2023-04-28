@@ -62,7 +62,7 @@
           //}
           muoviCibo();
           clearInterval(interval);
-          interval = setInterval(muoviCibo, 25000);
+          interval = setInterval(muoviCibo, 10000);
         }
 
         if (positionList.length > 5) {
@@ -444,7 +444,7 @@
       }
 
       muoviCibo();
-      interval = setInterval(muoviCibo, 25000);
+      interval = setInterval(muoviCibo, 10000);
 
       $(document).ready(function () {
         $("#finestra").children("#cerchio").first().offset(startPos);
